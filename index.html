@@ -141,13 +141,22 @@ async function confirmCart(){
 let camOff=false;
 const loadJsQR=()=>window.jsQR?Promise.resolve():new Promise((ok,no)=>{const x=document.createElement('script');x.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';x.onload=ok;x.onerror=no;document.head.appendChild(x)});
 async function camStart(){
- try{let det;
-  if('BarcodeDetector' in window){const bd=new BarcodeDetector({formats:['qr_code']});det=async v=>{const r=await bd.detect(v);return r.length?r[0].rawValue:null}}
-  else{await loadJsQR();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});det=async v=>{if(!v.videoWidth)return null;cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);return r?r.data:null}}
-  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}),v=$('vd');v.srcObject=s;v.hidden=false;await v.play();
-  stopCam=()=>{s.getTracks().forEach(t=>t.stop());v.srcObject=null};
-  const loop=async()=>{if(!v.srcObject)return;try{const raw=await det(v);if(raw){stopCam();return scanIn(raw)}}catch(e){}setTimeout(()=>requestAnimationFrame(loop),60)};loop()}
- catch(e){camOff=true;msg={k:'bad',t:'เปิดกล้องไม่ได้ ตรวจสิทธิ์การใช้กล้อง/ต่ออินเทอร์เน็ต หรือใช้เครื่องสแกนแทน'};render()}}
+ const bad=t=>{camOff=true;msg={k:'bad',t};setTimeout(render,0)},ua=navigator.userAgent;
+ if(/Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(ua))return bad('เปิดจากในแอป (LINE/Facebook) ซึ่งบล็อกกล้อง กดเมนู ⋯ แล้วเลือก "เปิดในเบราว์เซอร์" (Safari หรือ Chrome)');
+ if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return bad('หน้านี้ไม่ได้เปิดผ่านลิงก์ https จึงใช้กล้องไม่ได้ ให้เปิดจากลิงก์ github.io ไม่ใช่เปิดไฟล์จากเครื่อง');
+ let s;
+ try{s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})}
+ catch(e){const n=e&&e.name;return bad(n==='NotAllowedError'||n==='SecurityError'?'ยังไม่ได้อนุญาตกล้อง: แตะไอคอนแม่กุญแจหรือตั้งค่าเว็บไซต์ → กล้อง → อนุญาต แล้วรีเฟรชหน้า':n==='NotFoundError'?'ไม่พบกล้องในเครื่องนี้':n==='NotReadableError'?'กล้องถูกใช้โดยแอปอื่น ปิดแอปอื่นแล้วลองใหม่':'เปิดกล้องไม่ได้ ('+(n||e)+')')}
+ let det=null;
+ if('BarcodeDetector' in window){try{const bd=new BarcodeDetector({formats:['qr_code']});det=async v=>{const r=await bd.detect(v);return r.length?r[0].rawValue:null}}catch(e){det=null}}
+ if(!det){try{await loadJsQR()}catch(e){s.getTracks().forEach(t=>t.stop());return bad('โหลดตัวอ่าน QR ไม่ได้ ตรวจอินเทอร์เน็ตแล้วกด "เปิดกล้องสแกน" ใหม่')}
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+  det=async v=>{if(!v.videoWidth)return null;cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);return r?r.data:null}}
+ const v=$('vd');if(!v){s.getTracks().forEach(t=>t.stop());return}
+ v.setAttribute('playsinline','');v.muted=true;v.srcObject=s;v.hidden=false;
+ try{await v.play()}catch(e){}
+ stopCam=()=>{s.getTracks().forEach(t=>t.stop());v.srcObject=null};
+ const loop=async()=>{if(!v.srcObject)return;try{const raw=await det(v);if(raw){stopCam();return scanIn(raw)}}catch(e){}setTimeout(()=>requestAnimationFrame(loop),60)};loop()}
 function bDisp0(){$('to').value=who.to;$('to').onchange=e=>who.to=e.target.value;$('by').oninput=e=>who.by=e.target.value;{const sc=$('sc');let tm;const go=()=>{clearTimeout(tm);const v=sc.value.trim();if(!v)return;sc.value='';scanIn(v)};
  const ready=v=>{const n=normScan(v);return CATRE.test(n)||CATS.includes(n)||(n.length>2&&!!pick(n))};
  sc.onkeydown=e=>{if(e.key==='Enter'||e.key==='Tab'){if(sc.value.trim()){e.preventDefault();go()}}};
