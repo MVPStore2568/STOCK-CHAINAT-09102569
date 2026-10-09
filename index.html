@@ -98,7 +98,7 @@ const now=x=>st(x,'0000','9999');
 const dlist=only=>'<datalist id="dl">'+SKUS.filter(x=>!only||now(x).bal>0).map(x=>`<option value="${x.c} · ${x.n}">`).join('')+'</datalist>';
 const CATS=[...new Set(SKUS.map(x=>x.cat))],catOpts=()=>CATS.map(c=>`<option>${c}</option>`).join('');
 const TABS=[['rep','รายงาน'],['recv','รับเข้า'],['disp','เบิก'],['his','ประวัติ'],['qr','พิมพ์ QR'],['set','Google Sheet']];
-let tab=(location.hash==='#disp'?'disp':'rep'),cart=[],scanned=null,qv=1,who={to:'ร้านหน้าโรงเรียน',by:''},msg={k:'idle',t:'พร้อมสแกน — สแกน QR ที่ป้ายสินค้า 1 ครั้งต่อรายการ'},stopCam=()=>{};
+let tab=(location.hash==='#disp'?'disp':'rep'),cart=[],scanned=null,qv=1,who=(()=>{let o={to:'ร้านหน้าโรงเรียน',by:''};try{o.by=localStorage.getItem('stk_by')||'';o.to=localStorage.getItem('stk_to')||o.to}catch(e){}return o})(),msg={k:'idle',t:'พร้อมสแกน — สแกน QR ที่ป้ายสินค้า 1 ครั้งต่อรายการ'},stopCam=()=>{};
 const st2=(r,b)=>r.has&&b<=0?'<span class="tag zero">หมด</span>':r.has&&b<=LOW?'<span class="tag low">ใกล้หมด</span>':'';
 
 /* ---------- เบิกด้วย QR ---------- */
@@ -111,14 +111,14 @@ return `<div class="grid"><div><div class="card"><h2>1 · สแกน QR ที
 ${c?`<div class="card"><h2>2 · ใส่จำนวนที่เบิก</h2><p class="sub"><b>${c.n}</b> · รหัส ${c.c} · คงเหลือในคลัง <b>${b}</b>${ic?` · อยู่ในใบเบิกแล้ว ${ic}`:''}</p>
 <div class="qty"><button class="btn ghost qb" id="mn" aria-label="ลด">−</button><input id="qv" type="number" inputmode="numeric" min="1" value="${qv}"><button class="btn ghost qb" id="pl" aria-label="เพิ่ม">+</button></div>
 <div class="tools">${[1,5,10,20,50].map(n=>`<button class="btn ghost" data-q="${n}">+${n}</button>`).join('')}</div>
-<button class="btn" id="ad" style="width:100%;margin-top:12px">เพิ่มลงใบเบิก</button></div>`:''}${cs?catCard():''}</div>
+<div class="row" style="margin-top:12px"><button class="btn" id="adn" style="flex:2;font-size:18px;padding:12px">เบิกเลย</button><button class="btn ghost" id="ad" style="flex:1">เพิ่มลงใบเบิก</button></div></div>`:''}${cs?catCard():''}</div>
 <div><div class="card"><h2>ใบเบิก · ${who.to}</h2><p class="sub">${cart.length} รายการ รวม ${tot} ชิ้น</p>
 ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${nm(sku(l.c))}</b><br><small>${l.c} · เหลือหลังเบิก ${now(sku(l.c)).bal-l.q}</small></div><div class="cnt">${l.q} <button class="btn ghost" data-rm="${i}" style="padding:2px 8px;font-size:12px">ลบ</button></div></div>`).join(''):'<div class="empty">ยังไม่มีรายการ</div>'}
 <button class="btn" id="ok" style="width:100%;margin-top:12px" ${cart.length?'':'disabled'}>ยืนยันและตัดสต๊อค</button>
 <p class="sub" style="margin:8px 0 0">ระบบบันทึกลง Google Sheet ปีการศึกษา ${ayc+543} อัตโนมัติ</p></div></div></div>`}
 const TH2EN={'ฟ':'a','ิ':'b','แ':'c','ก':'d','ำ':'e','ด':'f','เ':'g','้':'h','ร':'i','่':'j','า':'k','ส':'l','ท':'m','ื':'n','น':'o','ย':'p','ๆ':'q','พ':'r','ห':'s','ะ':'t','ี':'u','อ':'v','ไ':'w','ป':'x','ั':'y','ผ':'z','ฤ':'A','ฉ':'C','ฏ':'D','ฎ':'E','โ':'F','ฌ':'G','็':'H','ณ':'I','๋':'J','ษ':'K','ศ':'L','?':'M','์':'N','ฯ':'O','ญ':'P','ฑ':'R','ฆ':'S','ธ':'T','๊':'U','ฮ':'V','"':'W',')':'X','ํ':'Y','(':'Z','ฅ':'|','ฃ':'\\','ๅ':'1','/':'2','-':'3','ภ':'4','ถ':'5','ุ':'6','ึ':'7','ค':'8','ต':'9','จ':'0'};
 const CATRE=/^MV\s*\|\s*CAT\s*\|\s*(\d+)$/i;
-const normScan=v=>{let t=String(v||'').replace(/[\u200B-\u200D\uFEFF\r\n\t]/g,'').trim();const um=/#cat=(\d+)/.exec(t);if(um)return 'MV|CAT|'+um[1];if(CATRE.test(t)||/^MV\s*\|/i.test(t)&&!/[\u0E00-\u0E7F]/.test(t))return t;
+const normScan=v=>{let t=String(v||'').replace(/[\u200B-\u200D\uFEFF\r\n\t]/g,'').trim();const um=/#cat=(\d+)/.exec(t);if(um)return 'MV|CAT|'+um[1];const us=/#sku=([^&\s]+)/.exec(t);if(us)return 'MV|'+decodeURIComponent(us[1]);if(CATRE.test(t)||/^MV\s*\|/i.test(t)&&!/[\u0E00-\u0E7F]/.test(t))return t;
  if(/[\u0E00-\u0E7F]/.test(t)){const f=[...t].map(ch=>TH2EN[ch]||ch).join('');if(CATRE.test(f)||/^MV\s*\|/i.test(f))return f}return t};
 function scanIn(v){v=normScan(v);const mc=CATRE.exec(v)||(CATS.includes(v)?[0,CATS.indexOf(v)+1]:null);if(mc){const n=CATS[+mc[1]-1];if(!n){msg={k:'bad',t:'ไม่พบหมวดหมู่นี้'};return render()}openCat(n);msg={k:'ok',t:`สแกนหมวด: ${n} · ใส่จำนวนที่ต้องการแต่ละรายการ แล้วกดใส่ใบเบิก`};return render()}cs=null;const c=pick(v);if(!c)msg={k:'bad',t:'ไม่พบสินค้านี้ ลองสแกนใหม่หรือเลือกจากรายการ'};
  else if(now(sku(c)).bal<=0){scanned=null;msg={k:'bad',t:`${nm(sku(c))} หมดในคลัง`}}
@@ -127,6 +127,7 @@ function addLine(){const x=sku(scanned),q=+$('qv').value,b=now(x).bal;qv=q;
  if(!(q>=1)||q>b){msg={k:'bad',t:`จำนวนต้องอยู่ระหว่าง 1 ถึง ${b}`};return render()}
  const l=cart.find(l=>l.c===scanned);l?l.q=q:cart.push({c:scanned,q});msg={k:'ok',t:`เพิ่ม ${nm(x)} จำนวน ${q} แล้ว สแกนชิ้นต่อไปได้เลย`};scanned=null;render()}
 async function confirmCart(){
+ if(!cart.length)return;
  const okb=$('ok');if(okb)okb.disabled=true;
  if(apiUrl()){try{const j=await api();mergeSrv(j.tx);idx()}catch(e){}}
  const bad=cart.filter(l=>l.q>now(sku(l.c)).bal);
@@ -157,12 +158,12 @@ async function camStart(){
  try{await v.play()}catch(e){}
  stopCam=()=>{s.getTracks().forEach(t=>t.stop());v.srcObject=null};
  const loop=async()=>{if(!v.srcObject)return;try{const raw=await det(v);if(raw){stopCam();return scanIn(raw)}}catch(e){}setTimeout(()=>requestAnimationFrame(loop),60)};loop()}
-function bDisp0(){$('to').value=who.to;$('to').onchange=e=>who.to=e.target.value;$('by').oninput=e=>who.by=e.target.value;{const sc=$('sc');let tm;const go=()=>{clearTimeout(tm);const v=sc.value.trim();if(!v)return;sc.value='';scanIn(v)};
+function bDisp0(){$('to').value=who.to;$('to').onchange=e=>{who.to=e.target.value;try{localStorage.setItem('stk_to',who.to)}catch(x){}};$('by').oninput=e=>{who.by=e.target.value;try{localStorage.setItem('stk_by',who.by)}catch(x){}};{const sc=$('sc');let tm;const go=()=>{clearTimeout(tm);const v=sc.value.trim();if(!v)return;sc.value='';scanIn(v)};
  const ready=v=>{const n=normScan(v);return CATRE.test(n)||CATS.includes(n)||(n.length>2&&!!pick(n))};
  sc.onkeydown=e=>{if(e.key==='Enter'||e.key==='Tab'){if(sc.value.trim()){e.preventDefault();go()}}};
  sc.oninput=()=>{clearTimeout(tm);if(ready(sc.value))tm=setTimeout(go,350)};sc.onchange=go;sc.onpaste=()=>setTimeout(()=>{if(ready(sc.value))go()},0)}$('cam').onclick=()=>{camOff=false;camStart()};if(!camOff&&!cs&&!scanned&&navigator.maxTouchPoints>0&&!$('vd').srcObject)camStart();
  if(scanned){const q=$('qv');q.oninput=()=>qv=+q.value;$('mn').onclick=()=>{qv=Math.max(1,(+q.value||1)-1);q.value=qv};$('pl').onclick=()=>{qv=(+q.value||0)+1;q.value=qv};
- document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qv=(+q.value||0)+ +b.dataset.q;q.value=qv});$('ad').onclick=addLine;q.focus();q.select()}else $('sc').focus();
+ document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qv=(+q.value||0)+ +b.dataset.q;q.value=qv});$('ad').onclick=addLine;$('adn').onclick=async()=>{const code=scanned;$('adn').disabled=true;addLine();if(cart.some(l=>l.c===code))await confirmCart()};q.focus();q.select()}else $('sc').focus();
  document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.rm,1);render()});$('ok').onclick=confirmCart}
 
 /* ---------- เบิกทีละหมวด (สแกนครั้งเดียว เลือกหลายรายการ) ---------- */
@@ -172,7 +173,7 @@ function openCat(n){cs=n;cq={};cf='';scanned=null;cart.forEach(l=>{if(sku(l.c).c
 function catCard(){return `<div class="card"><h2>2 · เลือกรายการในหมวด</h2><p class="sub"><b>${cs}</b> · ${catItems().length} รายการ · ใส่จำนวนที่ต้องการเบิก แล้วกดใส่ใบเบิกครั้งเดียว</p>
 <div class="row"><label style="flex:2">ค้นหาในหมวด<input id="cf" value="${String(cf).replace(/"/g,'&quot;')}" placeholder="เช่น XL หรือ 38"></label><label style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-bottom:9px"><input type="checkbox" id="cz" style="width:auto;margin:0" ${cz?'checked':''}>เฉพาะที่มีของ</label></div>
 <div id="cl" style="margin-top:6px"></div><div id="cs2" class="sub" style="margin:10px 0 0;font-weight:600"></div>
-<div class="row" style="margin-top:8px"><button class="btn" id="cadd" style="flex:2">ใส่ใบเบิก</button><button class="btn ghost" id="cclr">ล้างจำนวน</button><button class="btn ghost" id="cx">ปิด</button></div></div>`}
+<div class="row" style="margin-top:8px"><button class="btn" id="cnow" style="flex:2;font-size:18px;padding:12px">เบิกเลย</button><button class="btn ghost" id="cadd">ใส่ใบเบิก</button><button class="btn ghost" id="cclr">ล้างจำนวน</button><button class="btn ghost" id="cx">ปิด</button></div></div>`}
 function sumCat(){const k=Object.keys(cq);$('cs2').textContent=`เลือกแล้ว ${k.length} รายการ รวม ${k.reduce((a,c)=>a+cq[c],0)} ชิ้น`}
 function setQ(c,v){const b=now(sku(c)).bal;v=Math.max(0,Math.min(b,Math.floor(+v||0)));v?cq[c]=v:delete cq[c];const i=document.querySelector(`[data-cv="${c}"]`);if(i)i.value=v||'';sumCat()}
 function drawCat(){const q=cf.trim().toLowerCase(),L=catItems().filter(x=>(!cz||now(x).bal>0)&&(!q||(x.n+x.c).toLowerCase().includes(q)));
@@ -183,7 +184,7 @@ function bDisp(){bDisp0();const cc=$('cc');cc.onchange=e=>{if(e.target.value){op
  $('cl').oninput=e=>{const i=e.target.closest('[data-cv]');if(i){const c=i.dataset.cv,v=Math.max(0,Math.min(now(sku(c)).bal,Math.floor(+i.value||0)));v?cq[c]=v:delete cq[c];sumCat()}};
  $('cl').onchange=e=>{const i=e.target.closest('[data-cv]');if(i)setQ(i.dataset.cv,i.value)};
  $('cf').oninput=e=>{cf=e.target.value;drawCat()};$('cz').onchange=e=>{cz=e.target.checked;drawCat()};
- $('cclr').onclick=()=>{cq={};drawCat()};$('cx').onclick=()=>{cs=null;cq={};render()};
+ $('cnow').onclick=async()=>{if(!Object.keys(cq).length){msg={k:'bad',t:'ยังไม่ได้ใส่จำนวนสินค้าที่ต้องการเบิก'};return render()}$('cnow').disabled=true;$('cadd').click();await confirmCart()};$('cclr').onclick=()=>{cq={};drawCat()};$('cx').onclick=()=>{cs=null;cq={};render()};
  $('cadd').onclick=()=>{catItems().forEach(x=>{cart=cart.filter(l=>l.c!==x.c);if(cq[x.c]>0)cart.push({c:x.c,q:cq[x.c]})});const n=Object.keys(cq).length;msg={k:'ok',t:`ใส่ใบเบิกแล้ว ${n} รายการจากหมวด ${cs} สแกนหมวดถัดไปได้เลย`};cs=null;cq={};render()};drawCat()}
 
 /* ---------- รายงาน ---------- */
@@ -312,7 +313,7 @@ function bRecv(){$('rs').oninput=e=>rdr.s=e.target.value;$('rq').oninput=e=>rdr.
 
 /* ---------- พิมพ์ QR ---------- */
 let qf={cat:'',q:'',st:true,m:'cat'};const qrCat=i=>{try{const q=qrcode(0,'M');q.addData(/^https?:$/.test(location.protocol)?location.href.split('#')[0]+'#cat='+i:'MV|CAT|'+i);q.make();return q.createImgTag(6,0,'QR หมวด '+i)}catch(e){return ''}};
-const qrImg=c=>{try{const q=qrcode(0,'M');q.addData('MV|'+c);q.make();return q.createImgTag(6,0,'QR '+c)}catch(e){return ''}};
+const qrImg=c=>{try{const q=qrcode(0,'M');q.addData(/^https?:$/.test(location.protocol)?location.href.split('#')[0]+'#sku='+encodeURIComponent(c):'MV|'+c);q.make();return q.createImgTag(6,0,'QR '+c)}catch(e){return ''}};
 function qr(){return `<div class="card"><h2>พิมพ์ป้าย QR สำหรับติดชั้นสินค้า</h2><div class="row np" style="margin-bottom:8px"><button class="btn${qf.m==='cat'?'':' ghost'}" data-qm="cat">ป้ายหมวดหมู่ (แนะนำ)</button><button class="btn${qf.m==='sku'?'':' ghost'}" data-qm="sku">ป้ายรายสินค้า</button></div><p class="sub np">${qf.m==='cat'?'1 หมวดต่อ 1 QR ติดที่ชั้นหรือกล่องของหมวดนั้น สแกนแล้วเลือกหลายรายการพร้อมกัน':'1 สินค้าต่อ 1 QR ติดที่ชั้นหรือกล่อง'}</p>
 <div class="row np" style="margin-bottom:12px"><label style="flex:2">ค้นหา<input id="qq" value="${qf.q}" placeholder="ชื่อหรือรหัสสินค้า"></label><label>หมวดหมู่<select id="qc"><option value="">ทั้งหมด</option>${catOpts()}</select></label>
 <label style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-bottom:9px"><input type="checkbox" id="qs" style="width:auto;margin:0" ${qf.st?'checked':''}>เฉพาะที่มีของ</label><button class="btn" id="pr">พิมพ์ป้าย</button></div><div class="qg" id="qg"></div></div>`}
@@ -370,7 +371,8 @@ function render(){stopCam();stopCam=()=>{};idx();
  document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;msg={k:'idle',t:tab==='recv'?'กรอกข้อมูลแล้วกดบันทึก':'พร้อมสแกน — สแกน QR ที่ป้ายสินค้า 1 ครั้งต่อรายการ'};render()});
  $('main').innerHTML=VIEWS[tab]()+dlist(tab==='disp');BIND[tab]();fillImgs()}
 $('ay').innerHTML=AYS.map(a=>`<option value="${a}">${a+543} (พ.ค.${(a+543)%100}–เม.ย.${(a+544)%100})</option>`).join('');$('ay').value=ayc;$('ay').onchange=e=>{ayc=+e.target.value;render()};
-const fromHash=()=>{const m=/#cat=(\d+)/.exec(location.hash),n=m&&CATS[+m[1]-1];if(n){tab='disp';openCat(n);msg={k:'ok',t:`สแกนหมวด: ${n} · ใส่จำนวนที่ต้องการแต่ละรายการ แล้วกดใส่ใบเบิก`};return true}return false};
+const fromHash=()=>{const ms=/#sku=([^&]+)/.exec(location.hash);if(ms){const c=decodeURIComponent(ms[1]);if(MAP.has(c)){tab='disp';cs=null;if(now(sku(c)).bal>0){scanned=c;qv=1;msg={k:'ok',t:`สแกนแล้ว: ${nm(sku(c))} — ใส่จำนวนแล้วกด "เบิกเลย"`}}else{scanned=null;msg={k:'bad',t:`${nm(sku(c))} หมดในคลัง`}}return true}}
+ const m=/#cat=(\d+)/.exec(location.hash),n=m&&CATS[+m[1]-1];if(n){tab='disp';openCat(n);msg={k:'ok',t:`สแกนหมวด: ${n} · ใส่จำนวนที่ต้องการแต่ละรายการ แล้วกดใส่ใบเบิก`};return true}return false};
 addEventListener('hashchange',()=>{if(fromHash())render()});
 fromHash();render();
 startSync();
