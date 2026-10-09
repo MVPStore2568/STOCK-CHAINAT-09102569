@@ -118,7 +118,7 @@ ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${nm(sku(l.c))}</b><br>
 <p class="sub" style="margin:8px 0 0">ระบบบันทึกลง Google Sheet ปีการศึกษา ${ayc+543} อัตโนมัติ</p></div></div></div>`}
 const TH2EN={'ฟ':'a','ิ':'b','แ':'c','ก':'d','ำ':'e','ด':'f','เ':'g','้':'h','ร':'i','่':'j','า':'k','ส':'l','ท':'m','ื':'n','น':'o','ย':'p','ๆ':'q','พ':'r','ห':'s','ะ':'t','ี':'u','อ':'v','ไ':'w','ป':'x','ั':'y','ผ':'z','ฤ':'A','ฉ':'C','ฏ':'D','ฎ':'E','โ':'F','ฌ':'G','็':'H','ณ':'I','๋':'J','ษ':'K','ศ':'L','?':'M','์':'N','ฯ':'O','ญ':'P','ฑ':'R','ฆ':'S','ธ':'T','๊':'U','ฮ':'V','"':'W',')':'X','ํ':'Y','(':'Z','ฅ':'|','ฃ':'\\','ๅ':'1','/':'2','-':'3','ภ':'4','ถ':'5','ุ':'6','ึ':'7','ค':'8','ต':'9','จ':'0'};
 const CATRE=/^MV\s*\|\s*CAT\s*\|\s*(\d+)$/i;
-const normScan=v=>{let t=String(v||'').replace(/[\u200B-\u200D\uFEFF\r\n\t]/g,'').trim();if(CATRE.test(t)||/^MV\s*\|/i.test(t)&&!/[\u0E00-\u0E7F]/.test(t))return t;
+const normScan=v=>{let t=String(v||'').replace(/[\u200B-\u200D\uFEFF\r\n\t]/g,'').trim();const um=/#cat=(\d+)/.exec(t);if(um)return 'MV|CAT|'+um[1];if(CATRE.test(t)||/^MV\s*\|/i.test(t)&&!/[\u0E00-\u0E7F]/.test(t))return t;
  if(/[\u0E00-\u0E7F]/.test(t)){const f=[...t].map(ch=>TH2EN[ch]||ch).join('');if(CATRE.test(f)||/^MV\s*\|/i.test(f))return f}return t};
 function scanIn(v){v=normScan(v);const mc=CATRE.exec(v)||(CATS.includes(v)?[0,CATS.indexOf(v)+1]:null);if(mc){const n=CATS[+mc[1]-1];if(!n){msg={k:'bad',t:'ไม่พบหมวดหมู่นี้'};return render()}openCat(n);msg={k:'ok',t:`สแกนหมวด: ${n} · ใส่จำนวนที่ต้องการแต่ละรายการ แล้วกดใส่ใบเบิก`};return render()}cs=null;const c=pick(v);if(!c)msg={k:'bad',t:'ไม่พบสินค้านี้ ลองสแกนใหม่หรือเลือกจากรายการ'};
  else if(now(sku(c)).bal<=0){scanned=null;msg={k:'bad',t:`${nm(sku(c))} หมดในคลัง`}}
@@ -311,7 +311,7 @@ function bRecv(){$('rs').oninput=e=>rdr.s=e.target.value;$('rq').oninput=e=>rdr.
  rl=[];rpend=[];rcand=null;rdr={s:'',q:10,f:rdr.f,d:'',dt:''};render()}}
 
 /* ---------- พิมพ์ QR ---------- */
-let qf={cat:'',q:'',st:true,m:'cat'};const qrCat=i=>{try{const q=qrcode(0,'M');q.addData('MV|CAT|'+i);q.make();return q.createImgTag(6,0,'QR หมวด '+i)}catch(e){return ''}};
+let qf={cat:'',q:'',st:true,m:'cat'};const qrCat=i=>{try{const q=qrcode(0,'M');q.addData(/^https?:$/.test(location.protocol)?location.href.split('#')[0]+'#cat='+i:'MV|CAT|'+i);q.make();return q.createImgTag(6,0,'QR หมวด '+i)}catch(e){return ''}};
 const qrImg=c=>{try{const q=qrcode(0,'M');q.addData('MV|'+c);q.make();return q.createImgTag(6,0,'QR '+c)}catch(e){return ''}};
 function qr(){return `<div class="card"><h2>พิมพ์ป้าย QR สำหรับติดชั้นสินค้า</h2><div class="row np" style="margin-bottom:8px"><button class="btn${qf.m==='cat'?'':' ghost'}" data-qm="cat">ป้ายหมวดหมู่ (แนะนำ)</button><button class="btn${qf.m==='sku'?'':' ghost'}" data-qm="sku">ป้ายรายสินค้า</button></div><p class="sub np">${qf.m==='cat'?'1 หมวดต่อ 1 QR ติดที่ชั้นหรือกล่องของหมวดนั้น สแกนแล้วเลือกหลายรายการพร้อมกัน':'1 สินค้าต่อ 1 QR ติดที่ชั้นหรือกล่อง'}</p>
 <div class="row np" style="margin-bottom:12px"><label style="flex:2">ค้นหา<input id="qq" value="${qf.q}" placeholder="ชื่อหรือรหัสสินค้า"></label><label>หมวดหมู่<select id="qc"><option value="">ทั้งหมด</option>${catOpts()}</select></label>
@@ -370,6 +370,8 @@ function render(){stopCam();stopCam=()=>{};idx();
  document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;msg={k:'idle',t:tab==='recv'?'กรอกข้อมูลแล้วกดบันทึก':'พร้อมสแกน — สแกน QR ที่ป้ายสินค้า 1 ครั้งต่อรายการ'};render()});
  $('main').innerHTML=VIEWS[tab]()+dlist(tab==='disp');BIND[tab]();fillImgs()}
 $('ay').innerHTML=AYS.map(a=>`<option value="${a}">${a+543} (พ.ค.${(a+543)%100}–เม.ย.${(a+544)%100})</option>`).join('');$('ay').value=ayc;$('ay').onchange=e=>{ayc=+e.target.value;render()};
-render();
+const fromHash=()=>{const m=/#cat=(\d+)/.exec(location.hash),n=m&&CATS[+m[1]-1];if(n){tab='disp';openCat(n);msg={k:'ok',t:`สแกนหมวด: ${n} · ใส่จำนวนที่ต้องการแต่ละรายการ แล้วกดใส่ใบเบิก`};return true}return false};
+addEventListener('hashchange',()=>{if(fromHash())render()});
+fromHash();render();
 startSync();
 </script></body></html>
